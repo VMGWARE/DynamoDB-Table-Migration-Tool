@@ -11,18 +11,22 @@
 using namespace std;
 using namespace rapidjson;
 
+// Check if a table exists by attempting to describe it
 bool tableExists(const string &tableName)
 {
+    // Use the AWS CLI to describe the table and check if it exists
     string command = "aws dynamodb describe-table --table-name " + tableName + " --output json > NUL 2>&1";
     int result = system(command.c_str());
     return result == 0;
 }
 
+// Get the table name from a JSON file
 string getTableNameFromJson(const string &jsonFilePath)
 {
     ifstream file(jsonFilePath);
     if (file.is_open())
     {
+        // Parse JSON using rapidjson
         IStreamWrapper inputStream(file);
 
         Document root;
@@ -52,12 +56,14 @@ int main(int argc, char *argv[])
         switch (opt)
         {
         case 'h':
+            // Display usage information
             cout << "Usage: " << argv[0] << " [OPTIONS]" << endl;
             cout << "Options:" << endl;
             cout << "  -h, --help         Show this help message and exit." << endl;
-            cout << "  -p, --path PATH    Specify the path to JSON directory." << endl;
+            cout << "  -p, --path         Specify the path to JSON directory." << endl;
             return 0;
         case 'p':
+            // Store the JSON directory path from the command-line argument
             jsonDir = optarg;
             break;
         default:
@@ -68,7 +74,7 @@ int main(int argc, char *argv[])
 
     if (jsonDir.empty())
     {
-        cerr << "Error: You must provide a JSON directory using -p or --path." << endl;
+        cerr << "Error: JSON directory path is required. Please specify with -p or --path." << endl;
         return 1;
     }
 
@@ -84,10 +90,15 @@ int main(int argc, char *argv[])
 
     string awsCommandBase = "aws dynamodb create-table --cli-input-json file://";
 
+    cout << "Loading JSON files from directory: " << jsonDir << endl;
+
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir(jsonDir.c_str())) != nullptr)
     {
+        cout << endl
+             << "Creating tables..." << endl;
+
         while ((ent = readdir(dir)) != nullptr)
         {
             string filename = ent->d_name;
@@ -100,28 +111,31 @@ int main(int argc, char *argv[])
                     string command = awsCommandBase + jsonFile + " --endpoint-url http://localhost:8000 > NUL 2>&1";
                     if (tableExists(tableName))
                     {
-                        cout << "Warning: Table already exists for " << filename << endl;
+                        cout << "  - Skipping " << filename << ", table already exists." << endl;
                     }
                     else
                     {
                         int result = system(command.c_str());
                         if (result != 0)
                         {
-                            cerr << "Warning: Table not created for " << filename << endl;
+                            cerr << "  - Error creating table for " << filename << "." << endl;
                         }
                         else
                         {
-                            cout << "Table created successfully for " << filename << endl;
+                            cout << "  + Created table for " << filename << "." << endl;
                         }
                     }
                 }
                 else
                 {
-                    cerr << "Error: TableName not found in " << filename << endl;
+                    cerr << "  - Could not get table name from " << filename << "." << endl;
                 }
             }
         }
         closedir(dir);
+
+        cout << endl
+             << "Finished creating tables." << endl;
     }
     else
     {
