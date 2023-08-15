@@ -1,18 +1,37 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
-#include <algorithm>
 #include <dirent.h>
 #include <cstdlib>
 #include <unistd.h>  // For getting the current working directory
 #include <getopt.h>  // For command-line option parsing
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>  // Use istreamwrapper to read from ifstream
 
-bool tableExists(const std::string& tableName) {
-    std::string command = "aws dynamodb describe-table --table-name " + tableName + " --output json > NUL 2>&1";
-    int result = std::system(command.c_str());
+using namespace std;
+using namespace rapidjson;
+
+bool tableExists(const string& tableName) {
+    string command = "aws dynamodb describe-table --table-name " + tableName + " --output json > NUL 2>&1";
+    int result = system(command.c_str());
     return result == 0;
 }
+
+string getTableNameFromJson(const string& jsonFilePath) {
+    ifstream file(jsonFilePath);
+    if (file.is_open()) {
+        rapidjson::IStreamWrapper inputStream(file);
+
+        rapidjson::Document root;
+        root.ParseStream(inputStream);
+
+        if (!root.HasParseError() && root.HasMember("TableName") && root["TableName"].IsString()) {
+            return root["TableName"].GetString();
+        }
+    }
+    return "";
+}
+
 
 int main(int argc, char* argv[]) {
     const char* const short_opts = "hp:";
@@ -22,28 +41,28 @@ int main(int argc, char* argv[]) {
             {nullptr, 0, nullptr, 0}
     };
 
-    std::string jsonDir;
+    string jsonDir;
 
     int opt;
     while ((opt = getopt_long(argc, argv, short_opts, long_opts, nullptr)) != -1) {
         switch (opt) {
             case 'h':
-                std::cout << "Usage: " << argv[0] << " [OPTIONS]" << std::endl;
-                std::cout << "Options:" << std::endl;
-                std::cout << "  -h, --help         Show this help message and exit." << std::endl;
-                std::cout << "  -p, --path PATH    Specify the path to JSON directory." << std::endl;
+                cout << "Usage: " << argv[0] << " [OPTIONS]" << endl;
+                cout << "Options:" << endl;
+                cout << "  -h, --help         Show this help message and exit." << endl;
+                cout << "  -p, --path PATH    Specify the path to JSON directory." << endl;
                 return 0;
             case 'p':
                 jsonDir = optarg;
                 break;
             default:
-                std::cerr << "Usage: " << argv[0] << " [OPTIONS]" << std::endl;
+                cerr << "Usage: " << argv[0] << " [OPTIONS]" << endl;
                 return 1;
         }
     }
 
     if (jsonDir.empty()) {
-        std::cerr << "Error: You must provide a JSON directory using -p or --path." << std::endl;
+        cerr << "Error: You must provide a JSON directory using -p or --path." << endl;
         return 1;
     }
 
@@ -55,26 +74,30 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::string awsCommandBase = "aws dynamodb create-table --cli-input-json file://";
+    string awsCommandBase = "aws dynamodb create-table --cli-input-json file://";
 
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir(jsonDir.c_str())) != nullptr) {
         while ((ent = readdir(dir)) != nullptr) {
-            std::string filename = ent->d_name;
+            string filename = ent->d_name;
             if (filename.size() > 5 && filename.substr(filename.size() - 5) == ".json") {
-                std::string jsonFile = jsonDir + "/" + filename;
-                std::string tableName = filename.substr(0, filename.size() - 5);  // Remove ".json" extension
-                std::string command = awsCommandBase + jsonFile + " --endpoint-url http://localhost:8000 > NUL 2>&1";
-                if (tableExists(tableName)) {
-                    std::cout << "Warning: Table already exists for " << filename << std::endl;
-                } else {
-                    int result = std::system(command.c_str());
-                    if (result != 0) {
-                        std::cerr << "Warning: Table not created for " << filename << std::endl;
+                string jsonFile = jsonDir + "/" + filename;
+                string tableName = getTableNameFromJson(jsonFile);
+                if (!tableName.empty()) {
+                    string command = awsCommandBase + jsonFile + " --endpoint-url http://localhost:8000 > NUL 2>&1";
+                    if (tableExists(tableName)) {
+                        cout << "Warning: Table already exists for " << filename << endl;
                     } else {
-                        std::cout << "Table created successfully for " << filename << std::endl;
+                        int result = system(command.c_str());
+                        if (result != 0) {
+                            cerr << "Warning: Table not created for " << filename << endl;
+                        } else {
+                            cout << "Table created successfully for " << filename << endl;
+                        }
                     }
+                } else {
+                    cerr << "Error: TableName not found in " << filename << endl;
                 }
             }
         }
