@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
-project(dynamodbJsonSetup)
+project(DynamoDBAutoTableSetup)
 
-add_executable(dynamodbJsonSetup main.cpp)
+add_executable(DynamoDBAutoTableSetup main.cpp)
 
 # Add the path to the rapidjson headers
-target_include_directories(dynamodbJsonSetup PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(DynamoDBAutoTableSetup PRIVATE ${CMAKE_SOURCE_DIR}/include)
