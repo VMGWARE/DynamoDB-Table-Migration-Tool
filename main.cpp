@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
             cout << "  -h, --help         Show this help message and exit." << endl;
             cout << "  -p, --path         Specify the path to JSON directory." << endl;
             cout << "  -f, --force        Force re-creation of existing tables." << endl;
+            cout << "  -d, --debug        Enable debug logging." << endl;
             return 0;
 
         case 'p':
