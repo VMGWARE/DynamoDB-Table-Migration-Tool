@@ -55,6 +55,12 @@ Before using this utility, ensure that you have the following prerequisites:
    ./DynamoDBAutoTableSetup -h
    ```
 
+   You also can use the `-f` or `--force` option to force the utility to overwrite existing tables. This option is disabled by default.
+
+   ```
+    ./DynamoDBAutoTableSetup -p /path/to/json/files -f
+    ```
+
 ## JSON Configuration Format
 
 Each JSON file in the specified directory should adhere to the format below. The utility extracts the `TableName` and other configuration details from each JSON file to create the corresponding DynamoDB table.
