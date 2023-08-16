@@ -25,14 +25,25 @@ Before using this utility, ensure that you have the following prerequisites:
 
 3. Build the C++ application using CMake:
 
-   ```
-   mkdir build
-   cd build
-   cmake ..
-   make
-   ```
+    - Linux/MacOS:
 
-4. Run the application with desired options. Use the `-p` or `--path` option to specify the path to the directory containing your JSON files:
+        ```
+        mkdir build
+        cd build
+        cmake ..
+        make
+        ```
+
+    - Windows:
+
+        ```
+        mkdir build
+        cd build
+        cmake ..
+        cmake --build .
+        ```  
+
+1. Run the application with desired options. Use the `-p` or `--path` option to specify the path to the directory containing your JSON files:
 
    ```
    ./DynamoDBAutoTableSetup -p /path/to/json/files
