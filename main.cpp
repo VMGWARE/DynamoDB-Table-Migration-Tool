@@ -11,9 +11,23 @@
 using namespace std;
 using namespace rapidjson;
 
+// Global variables
+bool force = false; // Force re-creation flag
+bool debug = false; // Debug flag
+
+// Debug logging macro
+#define DEBUG_LOG(msg)                                   \
+    do                                                   \
+    {                                                    \
+        if (debug)                                       \
+            std::cout << "[DEBUG] " << msg << std::endl; \
+    } while (0)
+
 // Check if a table exists by attempting to describe it
 bool tableExists(const string &tableName)
 {
+    DEBUG_LOG("Checking if table exists: " << tableName);
+
     // Use the AWS CLI to describe the table and check if it exists
     string command = "aws dynamodb describe-table --table-name " + tableName + " --output json > NUL 2>&1";
     int result = system(command.c_str());
@@ -23,6 +37,8 @@ bool tableExists(const string &tableName)
 // Get the table name from a JSON file
 string getTableNameFromJson(const string &jsonFilePath)
 {
+    DEBUG_LOG("Getting table name from JSON: " << jsonFilePath);
+
     ifstream file(jsonFilePath);
     if (file.is_open())
     {
@@ -34,24 +50,28 @@ string getTableNameFromJson(const string &jsonFilePath)
 
         if (!root.HasParseError() && root.HasMember("TableName") && root["TableName"].IsString())
         {
-            return root["TableName"].GetString();
+            string tableName = root["TableName"].GetString();
+            DEBUG_LOG("Extracted table name: " << tableName);
+            return tableName;
         }
     }
+
+    DEBUG_LOG("Table name extraction failed.");
     return "";
 }
 
 int main(int argc, char *argv[])
 {
 
-    const char *const short_opts = "hp:f";
+    const char *const short_opts = "hp:fd";
     const option long_opts[] = {
         {"help", no_argument, nullptr, 'h'},
         {"path", required_argument, nullptr, 'p'},
         {"force", no_argument, nullptr, 'f'}, // Add force option
+        {"debug", no_argument, nullptr, 'd'}, // Add debug option
     };
 
     string jsonDir;
-    bool force = false; // Force re-creation flag
 
     int opt;
     while ((opt = getopt_long(argc, argv, short_opts, long_opts, nullptr)) != -1)
@@ -73,6 +93,10 @@ int main(int argc, char *argv[])
 
         case 'f':
             force = true;
+            break;
+
+        case 'd':
+            debug = true;
             break;
 
         default:
@@ -115,18 +139,21 @@ int main(int argc, char *argv[])
             if (filename.size() > 5 && filename.substr(filename.size() - 5) == ".json")
             {
                 string jsonFile = jsonDir + "/" + filename;
+                DEBUG_LOG("Processing JSON file: " << jsonFile);
                 string tableName = getTableNameFromJson(jsonFile);
                 if (!tableName.empty())
                 {
+                    // Check if table already exists, moved here so it only runs once per file
+                    bool tableAlreadyExists = tableExists(tableName);
 
-                    if (tableExists(tableName) && !force)
+                    if (tableAlreadyExists && !force)
                     {
                         cout << "  - Skipping " << filename << ", table already exists." << endl;
                     }
                     else
                     {
                         // Delete if force flag set and table exists
-                        if (force && tableExists(tableName))
+                        if (force && tableAlreadyExists)
                         {
                             string deleteCommand = "aws dynamodb delete-table --table-name " + tableName + " --endpoint-url http://localhost:8000 > NUL 2>&1";
                             int deleteResult = system(deleteCommand.c_str());
