@@ -2,6 +2,14 @@
 
 **DynamoDBAutoTableSetup** is an automated utility designed to streamline the process of creating DynamoDB tables from JSON configurations using the AWS Command Line Interface (CLI). This tool scans a directory containing JSON files, extracts the table name and configuration details from each JSON file, and automatically creates the corresponding DynamoDB table using the `aws dynamodb create-table` command. It currently is designed only for local development purposes, and is not intended for use in production environments.
 
+## Features
+
+- Automatically creates DynamoDB tables based on JSON configuration files
+- Extracts table name and settings like throughput from JSON
+- Scans a directory and processes all .json files found
+- Provides options to print help text or force overwrite existing tables
+- Cross-platform (Linux, Mac, Windows) C++ application using AWS CLI
+
 ## Prerequisites
 
 Before using this utility, ensure that you have the following prerequisites:
