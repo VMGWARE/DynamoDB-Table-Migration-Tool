@@ -42,13 +42,16 @@ string getTableNameFromJson(const string &jsonFilePath)
 
 int main(int argc, char *argv[])
 {
-    const char *const short_opts = "hp:";
+
+    const char *const short_opts = "hp:f";
     const option long_opts[] = {
         {"help", no_argument, nullptr, 'h'},
         {"path", required_argument, nullptr, 'p'},
-        {nullptr, 0, nullptr, 0}};
+        {"force", no_argument, nullptr, 'f'}, // Add force option
+    };
 
     string jsonDir;
+    bool force = false; // Force re-creation flag
 
     int opt;
     while ((opt = getopt_long(argc, argv, short_opts, long_opts, nullptr)) != -1)
@@ -56,16 +59,22 @@ int main(int argc, char *argv[])
         switch (opt)
         {
         case 'h':
-            // Display usage information
+            // Print usage
             cout << "Usage: " << argv[0] << " [OPTIONS]" << endl;
             cout << "Options:" << endl;
             cout << "  -h, --help         Show this help message and exit." << endl;
             cout << "  -p, --path         Specify the path to JSON directory." << endl;
+            cout << "  -f, --force        Force re-creation of existing tables." << endl;
             return 0;
+
         case 'p':
-            // Store the JSON directory path from the command-line argument
             jsonDir = optarg;
             break;
+
+        case 'f':
+            force = true;
+            break;
+
         default:
             cerr << "Usage: " << argv[0] << " [OPTIONS]" << endl;
             return 1;
@@ -78,7 +87,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Handle the case where the provided path is "./" or similar
+    // Handle case where path is "./" or "."
     if (jsonDir == "./" || jsonDir == ".")
     {
         char currentPath[FILENAME_MAX];
@@ -96,6 +105,7 @@ int main(int argc, char *argv[])
     struct dirent *ent;
     if ((dir = opendir(jsonDir.c_str())) != nullptr)
     {
+
         cout << endl
              << "Creating tables..." << endl;
 
@@ -108,13 +118,31 @@ int main(int argc, char *argv[])
                 string tableName = getTableNameFromJson(jsonFile);
                 if (!tableName.empty())
                 {
-                    string command = awsCommandBase + jsonFile + " --endpoint-url http://localhost:8000 > NUL 2>&1";
-                    if (tableExists(tableName))
+
+                    if (tableExists(tableName) && !force)
                     {
                         cout << "  - Skipping " << filename << ", table already exists." << endl;
                     }
                     else
                     {
+                        // Delete if force flag set and table exists
+                        if (force && tableExists(tableName))
+                        {
+                            string deleteCommand = "aws dynamodb delete-table --table-name " + tableName + " --endpoint-url http://localhost:8000 > NUL 2>&1";
+                            int deleteResult = system(deleteCommand.c_str());
+                            if (deleteResult != 0)
+                            {
+                                cerr << "  - Error deleting table for " << filename << "." << endl;
+                            }
+                            else
+                            {
+                                cout << "  -+ Deleted table for " << filename << "." << endl;
+                            }
+                        }
+
+                        // Create table
+                        string command = awsCommandBase + jsonFile + " --endpoint-url http://localhost:8000 > NUL 2>&1";
+                        ;
                         int result = system(command.c_str());
                         if (result != 0)
                         {
@@ -132,6 +160,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
         closedir(dir);
 
         cout << endl
