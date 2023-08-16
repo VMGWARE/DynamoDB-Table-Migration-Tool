@@ -1,14 +1,15 @@
-# DynamoDBAutoTableSetup
+# DynamoDB Table Migration Tool
 
-**DynamoDBAutoTableSetup** is an automated utility designed to streamline the process of creating DynamoDB tables from JSON configurations using the AWS Command Line Interface (CLI). This tool scans a directory containing JSON files, extracts the table name and configuration details from each JSON file, and automatically creates the corresponding DynamoDB table using the `aws dynamodb create-table` command. It currently is designed only for local development purposes, and is not intended for use in production environments.
+**DynamoDB Table Migration Tool** is a C++ utility that automates the process of creating DynamoDB tables for local development. It scans a directory of JSON configuration files and uses the AWS CLI to generate tables based on those configs.
 
-## Features
+## Overview
 
-- Automatically creates DynamoDB tables based on JSON configuration files
-- Extracts table name and settings like throughput from JSON
-- Scans a directory and processes all .json files found
-- Provides options to print help text or force overwrite existing tables
-- Cross-platform (Linux, Mac, Windows) C++ application using AWS CLI
+- Automatically creates DynamoDB tables from JSON files using the AWS CLI
+- Designed to accelerate local dev and testing workflows
+- Extracts the table name from JSON and handles table creation
+- Scans a directory and processes all .json config files found
+- Provides options like help text, debug logging, and forced overwrites
+- Cross-platform C++ app using the AWS CLI and rapidjson
 
 ## Prerequisites
 
@@ -22,13 +23,13 @@ Before using this utility, ensure that you have the following prerequisites:
 1. Clone this repository to your local machine:
 
    ```
-   git clone https://github.com/VMGWARE/DynamoDBAutoTableSetup.git
+   git clone https://github.com/VMGWARE/DynamoDB-Table-Migration-Tool.git
    ```
 
 2. Navigate to the cloned repository:
 
    ```
-   cd DynamoDBAutoTableSetup
+   cd DynamoDB-Table-Migration-Tool
    ```
 
 3. Build the C++ application using CMake:
@@ -54,19 +55,19 @@ Before using this utility, ensure that you have the following prerequisites:
 4. Run the application with desired options. Use the `-p` or `--path` option to specify the path to the directory containing your JSON files:
 
    ```
-   ./DynamoDBAutoTableSetup -p /path/to/json/files
+   ./dynamo-table-migrate -p /path/to/json/files
    ```
 
    You can also use the `-h` or `--help` option to display available command-line options:
 
    ```
-   ./DynamoDBAutoTableSetup -h
+   ./dynamo-table-migrate -h
    ```
 
    You also can use the `-f` or `--force` option to force the utility to overwrite existing tables. This option is disabled by default.
 
    ```
-    ./DynamoDBAutoTableSetup -p /path/to/json/files -f
+    ./dynamo-table-migrate -p /path/to/json/files -f
     ```
 
 ## JSON Configuration Format
