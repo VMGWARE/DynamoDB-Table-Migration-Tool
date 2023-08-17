@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(DynamoDB-Table-Migration-Tool)
 
 add_executable(dynamo-table-migrate main.cpp)
