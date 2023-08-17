@@ -81,6 +81,9 @@ int main(int argc, char *argv[])
         case 'h':
             // Print usage
             cout << "Usage: " << argv[0] << " [OPTIONS]" << endl;
+            cout << "Description: This program reads JSON files from a directory, interacts with AWS DynamoDB using the AWS CLI,"
+                 << endl;
+            cout << "             and creates tables based on the table definitions in the JSON files." << endl;
             cout << "Options:" << endl;
             cout << "  -h, --help         Show this help message and exit." << endl;
             cout << "  -p, --path         Specify the path to JSON directory." << endl;
