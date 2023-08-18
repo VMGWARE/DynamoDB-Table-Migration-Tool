@@ -7,7 +7,7 @@
 #include <getopt.h> // For command-line option parsing
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h> // Use istreamwrapper to read from ifstream
-#include "spdlog/spdlog.h" // For logging
+// #include "spdlog/spdlog.h" // For logging
 
 using namespace std;
 using namespace rapidjson;
