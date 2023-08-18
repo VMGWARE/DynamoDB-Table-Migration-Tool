@@ -146,6 +146,9 @@ int main(int argc, char *argv[])
                 string jsonFile = jsonDir + "/" + filename;
                 DEBUG_LOG("Processing JSON file: " << jsonFile);
                 string tableName = getTableNameFromJson(jsonFile);
+
+                cout << "  Processing " << tableName << " table..." << endl;
+
                 if (!tableName.empty())
                 {
                     // Check if table already exists, moved here so it only runs once per file
@@ -168,7 +171,7 @@ int main(int argc, char *argv[])
                             }
                             else
                             {
-                                cout << "  -+ Deleted table for " << filename << "." << endl;
+                                cout << "  + Deleted table for " << filename << "." << endl;
                             }
                         }
 
