@@ -74,8 +74,6 @@ string getTableNameFromJson(const string &jsonFilePath)
 
 int main(int argc, char *argv[])
 {
-    DEBUG_LOG("Starting program.");
-
     // Parse command-line options
     const char *const short_opts = "hp:fd";
     const option long_opts[] = {
@@ -123,6 +121,8 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
+
+    DEBUG_LOG("Starting program.");
 
     // Check if path is empty
     if (jsonDir.empty())
