@@ -35,6 +35,17 @@ bool tableExists(const string &tableName)
     return result == 0;
 }
 
+// Check if DynamoDB can be accessed
+bool canAccessDynamoDB()
+{
+    DEBUG_LOG("Checking if DynamoDB can be accessed.");
+
+    // Use the AWS CLI to describe the table and check if it exists
+    string command = "aws dynamodb list-tables --output json > NUL 2>&1";
+    int result = system(command.c_str());
+    return result == 0;
+}
+
 // Get the table name from a JSON file
 string getTableNameFromJson(const string &jsonFilePath)
 {
@@ -63,7 +74,9 @@ string getTableNameFromJson(const string &jsonFilePath)
 
 int main(int argc, char *argv[])
 {
+    DEBUG_LOG("Starting program.");
 
+    // Parse command-line options
     const char *const short_opts = "hp:fd";
     const option long_opts[] = {
         {"help", no_argument, nullptr, 'h'},
@@ -74,6 +87,7 @@ int main(int argc, char *argv[])
 
     string jsonDir;
 
+    // Parse command-line options
     int opt;
     while ((opt = getopt_long(argc, argv, short_opts, long_opts, nullptr)) != -1)
     {
@@ -110,6 +124,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Check if path is empty
     if (jsonDir.empty())
     {
         cerr << "Error: JSON directory path is required. Please specify with -p or --path." << endl;
@@ -124,6 +139,13 @@ int main(int argc, char *argv[])
         {
             jsonDir = currentPath;
         }
+    }
+
+    // Check if path is valid
+    if (!canAccessDynamoDB())
+    {
+        cerr << "Error: Unable to access DynamoDB." << endl;
+        return 1;
     }
 
     string awsCommandBase = "aws dynamodb create-table --cli-input-json file://";
@@ -163,7 +185,7 @@ int main(int argc, char *argv[])
                         // Delete if force flag set and table exists
                         if (force && tableAlreadyExists)
                         {
-                            string deleteCommand = "aws dynamodb delete-table --table-name " + tableName + " --endpoint-url http://localhost:8000 > NUL 2>&1";
+                            string deleteCommand = "aws dynamodb delete-table --table-name " + tableName + " > NUL 2>&1";
                             int deleteResult = system(deleteCommand.c_str());
                             if (deleteResult != 0)
                             {
@@ -176,7 +198,7 @@ int main(int argc, char *argv[])
                         }
 
                         // Create table
-                        string command = awsCommandBase + jsonFile + " --endpoint-url http://localhost:8000 > NUL 2>&1";
+                        string command = awsCommandBase + jsonFile + " > NUL 2>&1";
                         ;
                         int result = system(command.c_str());
                         if (result != 0)
