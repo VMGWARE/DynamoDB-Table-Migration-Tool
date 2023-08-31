@@ -1,3 +1,12 @@
+
+/*!
+ * DynamoDB Table Migration Tool
+ * https://vmgware.dev/
+ *
+ * Copyright (c) 2023 VMG Ware
+ * MIT Licensed
+ */
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -77,7 +86,7 @@ void printBanner()
 {
     cout << "#######################################\n";
     cout << "#                                     #\n";
-    cout << "#  DynamoDB Table Creation Utility    #\n";
+    cout << "#    DynamoDB Table Migration Tool    #\n";
     cout << "#                                     #\n";
     cout << "#######################################\n\n";
     cout << "This utility reads JSON files from a directory and creates\n";
