@@ -72,6 +72,20 @@ string getTableNameFromJson(const string &jsonFilePath)
     return "";
 }
 
+// Print banner
+void printBanner()
+{
+    cout << "#######################################\n";
+    cout << "#                                     #\n";
+    cout << "#  DynamoDB Table Creation Utility    #\n";
+    cout << "#                                     #\n";
+    cout << "#######################################\n\n";
+    cout << "This utility reads JSON files from a directory and creates\n";
+    cout << "DynamoDB tables based on the table definitions in the JSON files.\n";
+    cout << "Please ensure you have the AWS CLI configured and accessible.\n";
+    cout << "---------------------------------------\n\n";
+}
+
 int main(int argc, char *argv[])
 {
     // Parse command-line options
@@ -84,6 +98,9 @@ int main(int argc, char *argv[])
     };
 
     string jsonDir;
+
+    // Print banner
+    printBanner();
 
     // Parse command-line options
     int opt;
