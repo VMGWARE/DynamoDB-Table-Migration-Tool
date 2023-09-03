@@ -24,6 +24,8 @@ using namespace rapidjson;
 // Global variables
 bool force = false; // Force re-creation flag
 bool debug = false; // Debug flag
+string appDir;      // Application directory
+string tempDir;     // Temporary directory
 
 // Debug logging macro
 #define DEBUG_LOG(msg)                                   \
@@ -110,6 +112,15 @@ int main(int argc, char *argv[])
 
     // Print banner
     printBanner();
+
+    // Set application directory to AppData on Windows, home directory on Linux
+    #ifdef _WIN32
+        appDir = getenv("APPDATA") + string("\\dynamodb-table-migration-tool");
+        tempDir = appDir + string("\\temp");
+    #else
+        appDir = getenv("HOME") + string("/.dynamodb-table-migration-tool");
+        tempDir = appDir + string("/temp");
+    #endif
 
     // Parse command-line options
     int opt;
