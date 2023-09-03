@@ -113,14 +113,29 @@ int main(int argc, char *argv[])
     // Print banner
     printBanner();
 
-    // Set application directory to AppData on Windows, home directory on Linux
-    #ifdef _WIN32
-        appDir = getenv("APPDATA") + string("\\dynamodb-table-migration-tool");
-        tempDir = appDir + string("\\temp");
-    #else
-        appDir = getenv("HOME") + string("/.dynamodb-table-migration-tool");
-        tempDir = appDir + string("/temp");
-    #endif
+// Set application directory to AppData on Windows, home directory on Linux
+#ifdef _WIN32
+    appDir = getenv("APPDATA") + string("\\DynamoDB-Table-Migration-Tool");
+
+    // Create app directory if it doesn't exist
+    if (system(("if not exist \"" + appDir + "\" mkdir \"" + appDir + "\" > NUL 2>&1").c_str()) != 0)
+    {
+        cerr << "Error: Unable to create application directory." << endl;
+        return 1;
+    }
+
+    tempDir = appDir + string("\\temp");
+
+    // Create temp directory if it doesn't exist
+    if (system(("if not exist \"" + tempDir + "\" mkdir \"" + tempDir + "\" > NUL 2>&1").c_str()) != 0)
+    {
+        cerr << "Error: Unable to create temporary directory." << endl;
+        return 1;
+    }
+#else
+    appDir = getenv("HOME") + string("/.DynamoDB-Table-Migration-Tool");
+    tempDir = appDir + string("/temp");
+#endif
 
     // Parse command-line options
     int opt;
@@ -188,6 +203,8 @@ int main(int argc, char *argv[])
     string awsCommandBase = "aws dynamodb create-table --cli-input-json file://";
 
     cout << "Loading JSON files from directory: " << jsonDir << endl;
+    string tmpErrorFile = tempDir + "\\error.log"; // Temporary file to capture error messages
+    cout << "Temporary error file: " << tmpErrorFile << endl;
 
     DIR *dir;
     struct dirent *ent;
@@ -235,16 +252,31 @@ int main(int argc, char *argv[])
                         }
 
                         // Create table
-                        string command = awsCommandBase + jsonFile + " > NUL 2>&1";
-                        ;
+                        string command = awsCommandBase + jsonFile + " > NUL 2>" + tmpErrorFile;
                         int result = system(command.c_str());
                         if (result != 0)
                         {
-                            cerr << "  - Error creating table for " << filename << "." << endl;
+                            ifstream errorStream(tmpErrorFile);
+                            if (errorStream.is_open())
+                            {
+                                string line;
+                                cerr << "  - Error creating table for " << filename << ":\n";
+                                while (getline(errorStream, line))
+                                {
+                                    cerr << "    " << line << "\n";
+                                }
+                                errorStream.close();
+                            }
+                            else
+                            {
+                                cerr << "  - Error creating table for " << filename << ", and couldn't read the error log." << endl;
+                            }
+                            remove(tmpErrorFile.c_str()); // Delete the temporary error file
                         }
                         else
                         {
                             cout << "  + Created table for " << filename << "." << endl;
+                            remove(tmpErrorFile.c_str()); // Delete the temporary error file if it exists
                         }
                     }
                 }
