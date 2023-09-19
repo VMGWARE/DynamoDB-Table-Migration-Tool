@@ -17,6 +17,8 @@
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h> // Use istreamwrapper to read from ifstream
 // #include "spdlog/spdlog.h" // For logging
+// #include "spdlog/sinks/stdout_color_sinks.h" // For logging
+// #include "spdlog/sinks/basic_file_sink.h" // Include for file logging
 #include "utils/TableMigrationTool.h" // Include the TableMigrationTool header
 
 // Namespaces
