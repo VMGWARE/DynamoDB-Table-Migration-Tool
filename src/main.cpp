@@ -15,16 +15,15 @@
 #include <unistd.h> // For getting the current working directory
 #include <getopt.h> // For command-line option parsing
 #include <rapidjson/document.h>
-#include <rapidjson/istreamwrapper.h> // Use istreamwrapper to read from ifstream
-// #include "spdlog/spdlog.h" // For logging
-// #include "spdlog/sinks/stdout_color_sinks.h" // For logging
-// #include "spdlog/sinks/basic_file_sink.h" // Include for file logging
-#include "utils/TableMigrationTool.h" // Include the TableMigrationTool header
+#include <rapidjson/istreamwrapper.h>        // Use istreamwrapper to read from ifstream
+#include "spdlog/spdlog.h"                   // For logging
+#include "spdlog/sinks/stdout_color_sinks.h" // For logging
+#include "spdlog/sinks/basic_file_sink.h"    // Include for file logging
+#include "utils/TableMigrationTool.h"        // Include the TableMigrationTool header
 
 // Namespaces
 using namespace std;
 using namespace rapidjson;
-
 
 int main(int argc, char *argv[])
 {
@@ -50,6 +49,7 @@ int main(int argc, char *argv[])
     if (system(("if not exist \"" + appDir + "\" mkdir \"" + appDir + "\" > NUL 2>&1").c_str()) != 0)
     {
         cerr << "Error: Unable to create application directory." << endl;
+        spdlog::get("file_logger")->error("Unable to create application directory.");
         return 1;
     }
 
@@ -59,12 +59,31 @@ int main(int argc, char *argv[])
     if (system(("if not exist \"" + tempDir + "\" mkdir \"" + tempDir + "\" > NUL 2>&1").c_str()) != 0)
     {
         cerr << "Error: Unable to create temporary directory." << endl;
+        spdlog::get("file_logger")->error("Unable to create temporary directory.");
         return 1;
     }
 #else
     appDir = getenv("HOME") + string("/.DynamoDB-Table-Migration-Tool");
     tempDir = appDir + string("/temp");
 #endif
+
+    // Initialize logger
+    try
+    {
+        // Set the log pattern and create loggers
+        spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+
+        auto console_logger = spdlog::stdout_color_mt("console");
+        auto file_logger = spdlog::basic_logger_mt("file_logger", appDir + string("/log.txt"));
+
+        // If debug flag is specified in the command arguments, set log level to debug
+        spdlog::set_level(spdlog::level::debug);
+    }
+    catch (const spdlog::spdlog_ex &ex)
+    {
+        std::cerr << "Log initialization failed: " << ex.what() << std::endl;
+        return 1;
+    }
 
     // Parse command-line options
     int opt;
@@ -104,6 +123,7 @@ int main(int argc, char *argv[])
     }
 
     DEBUG_LOG("Starting program.");
+    spdlog::get("file_logger")->debug("Starting program.");
 
     // Check if path is empty
     if (jsonDir.empty())
@@ -126,14 +146,17 @@ int main(int argc, char *argv[])
     if (!canAccessDynamoDB())
     {
         cerr << "Error: Unable to access DynamoDB." << endl;
+        spdlog::get("file_logger")->error("Unable to access DynamoDB.");
         return 1;
     }
 
     string awsCommandBase = "aws dynamodb create-table --cli-input-json file://";
 
     cout << "Loading JSON files from directory: " << jsonDir << endl;
+    spdlog::get("file_logger")->info("Loading JSON files from directory: {}", jsonDir);
     string tmpErrorFile = tempDir + "\\error.log"; // Temporary file to capture error messages
     cout << "Temporary error file: " << tmpErrorFile << endl;
+    spdlog::get("file_logger")->info("Temporary error file: {}", tmpErrorFile);
 
     DIR *dir;
     struct dirent *ent;
@@ -142,6 +165,7 @@ int main(int argc, char *argv[])
 
         cout << endl
              << "Creating tables..." << endl;
+        spdlog::get("file_logger")->info("Creating tables...");
 
         while ((ent = readdir(dir)) != nullptr)
         {
@@ -150,9 +174,11 @@ int main(int argc, char *argv[])
             {
                 string jsonFile = jsonDir + "/" + filename;
                 DEBUG_LOG("Processing JSON file: " << jsonFile);
+                spdlog::get("file_logger")->debug("Processing JSON file: {}", jsonFile);
                 string tableName = getTableNameFromJson(jsonFile);
 
                 cout << "  Processing " << tableName << " table..." << endl;
+                spdlog::get("file_logger")->info("Processing {} table...", tableName);
 
                 if (!tableName.empty())
                 {
@@ -162,6 +188,7 @@ int main(int argc, char *argv[])
                     if (tableAlreadyExists && !force)
                     {
                         cout << "  - Skipping " << filename << ", table already exists." << endl;
+                        spdlog::get("file_logger")->info("Skipping {}, table already exists.", filename);
                     }
                     else
                     {
@@ -173,10 +200,12 @@ int main(int argc, char *argv[])
                             if (deleteResult != 0)
                             {
                                 cerr << "  - Error deleting table for " << filename << "." << endl;
+                                spdlog::get("file_logger")->error("Error deleting table for {}.", filename);
                             }
                             else
                             {
                                 cout << "  + Deleted table for " << filename << "." << endl;
+                                spdlog::get("file_logger")->info("Deleted table for {}.", filename);
                             }
                         }
 
@@ -190,6 +219,7 @@ int main(int argc, char *argv[])
                             {
                                 string line;
                                 cerr << "  - Error creating table for " << filename << ":\n";
+                                spdlog::get("file_logger")->error("Error creating table for {}", filename);
                                 while (getline(errorStream, line))
                                 {
                                     cerr << "    " << line << "\n";
@@ -199,12 +229,14 @@ int main(int argc, char *argv[])
                             else
                             {
                                 cerr << "  - Error creating table for " << filename << ", and couldn't read the error log." << endl;
+                                spdlog::get("file_logger")->error("Error creating table for {}, and couldn't read the error log.", filename);
                             }
                             remove(tmpErrorFile.c_str()); // Delete the temporary error file
                         }
                         else
                         {
                             cout << "  + Created table for " << filename << "." << endl;
+                            spdlog::get("file_logger")->info("Created table for {}.", filename);
                             remove(tmpErrorFile.c_str()); // Delete the temporary error file if it exists
                         }
                     }
@@ -220,12 +252,15 @@ int main(int argc, char *argv[])
 
         cout << endl
              << "Finished creating tables." << endl;
+        spdlog::get("file_logger")->info("Finished creating tables.");
     }
     else
     {
+        spdlog::get("file_logger")->error("Could not open directory: {}", jsonDir);
         perror("Could not open directory");
         return EXIT_FAILURE;
     }
 
+    spdlog::get("file_logger")->debug("Program finished.");
     return 0;
 }
